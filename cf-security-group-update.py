@@ -2,7 +2,7 @@ import os
 import boto3
 import json
 from botocore.vendored import requests
-from ipaddress import ip_network
+from ipaddress import ip_network, ip_address
 
 
 def get_cloudflare_ip_list():
@@ -65,7 +65,7 @@ def check_waf_v1_ipset_ipvx_rule_exists(ipset_content, address, ip_type):
     for ipset_descriptor in ipset_descriptors:
         if not ip_type == ipset_descriptor['Type']:
             continue
-        if ip_network(address) == ip_network(ipset_descriptor['Value']):
+        if ip_network(address) == ip_network(ipset_descriptor['Value']) or ip_network(address).overlaps(ip_network(ipset_descriptor['Value'])):
             return True
     return False
 
