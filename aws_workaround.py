@@ -1,6 +1,6 @@
 from ipaddress import ip_address, ip_network
 
-def aws_workaround_convert_to_smaller_cidr(network_address, target_mask = 16):
+def convert_to_smaller_cidr(network_address, target_mask = 16):
     """ 
         That is a workaround function to convert larger masks into a list
         of smaller networks.
