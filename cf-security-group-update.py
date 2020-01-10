@@ -9,8 +9,24 @@ def get_cloudflare_ip_list():
     response = requests.get('https://api.cloudflare.com/client/v4/ips')
     temp = response.json()
     if 'result' in temp:
+        ipv4_list = temp['result']['ipv4_cidrs']
+        new_ipv4s = []
+        for ip in ipv4_list:
+            mask = int(ip.split(u'/')[1])
+            if (mask == 8 or (mask >= 16 and mask <= 32)):
+                new_ipv4s.append(ip)
+                continue
+            for new_ip in convert_to_smaller_cidr(ip, 16):
+                new_ipv4s.append(new_ip)
+        temp['result']['ipv4_cidrs_workaround'] = new_ipv4s
+        print("")
+        print(temp['result']['ipv4_cidrs'])
+        print(temp['result']['ipv4_cidrs_workaround'])
+        print(temp['result'])
+        print("")
         return temp['result']
     raise Exception("Cloudflare response error")
+
 
 def get_aws_s3_bucket_policy(s3_id):
     """ Return the Policy of an S3 """
