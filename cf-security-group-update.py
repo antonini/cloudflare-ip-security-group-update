@@ -260,6 +260,19 @@ def update_ip_set_v1_policies(ip_addresses):
             ip_type = rule['Type']
             ip_addr = rule['Value']
 
+            in_ipv4 = False
+            in_ipv6 = False
+            if 'IPV4' == ip_type:
+                for addr in ip_addresses['ipv4_cidrs_workaround']:
+                    if ip_address(ip_addr) in ip_network(ip_addr):
+                        in_ipv4 = True
+                        break
+            if 'IPV6' == ip_type:
+                for addr in ip_addresses['ipv6_cidrs_workaround']:
+                    if ip_address(ip_addr) in ip_network(ip_addr):
+                        in_ipv4 = True
+                        break
+
             in_ipv4 = ip_addr in ip_addresses['ipv4_cidrs_workaround']
             in_ipv6 = ip_addr in ip_addresses['ipv6_cidrs_workaround']
 
