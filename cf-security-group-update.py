@@ -2,6 +2,7 @@ import os
 import boto3
 import json
 from botocore.vendored import requests
+from aws_workaround import convert_to_smaller_cidr
 
 
 def get_cloudflare_ip_list():
