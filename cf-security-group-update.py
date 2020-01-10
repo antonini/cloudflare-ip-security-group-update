@@ -65,7 +65,7 @@ def check_waf_v1_ipset_ipvx_rule_exists(ipset_content, address, ip_type):
     for ipset_descriptor in ipset_descriptors:
         if not ip_type == ipset_descriptor['Type']:
             continue
-        if address == ipset_descriptor['Value']:
+        if ip_network(address) == ip_network(ipset_descriptor['Value']):
             return True
     return False
 
