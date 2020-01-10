@@ -31,7 +31,7 @@ def get_cloudflare_ip_list():
         new_ipv6s = []
         for ip in ipv6_list:
             mask = int(ip.split(u'/')[1])
-            if (mask in [24, 32, 48, 56, 64, 128])
+            if (mask in [24, 32, 48, 56, 64, 128]):
                 new_ipv6s.append(ip)
                 continue
             new_prefix = 32
