@@ -20,12 +20,6 @@ def get_cloudflare_ip_list():
             for new_ip in ip_network(ip).subnets(new_prefix=16):
                 new_ipv4s.append(str(new_ip))
         temp['result']['ipv4_cidrs_workaround'] = new_ipv4s
-        print("")
-        print("IPV4")
-        print(temp['result']['ipv4_cidrs'])
-        print(temp['result']['ipv4_cidrs_workaround'])
-        print(temp['result'])
-        print("")
 
         ipv6_list = temp['result']['ipv6_cidrs']
         new_ipv6s = []
@@ -42,12 +36,7 @@ def get_cloudflare_ip_list():
             for new_ip in ip_network(ip).subnets( new_prefix = new_prefix ):
                 new_ipv6s.append(str(new_ip))
         temp['result']['ipv6_cidrs_workaround'] = new_ipv6s
-        print("")
-        print("IPV6")
-        print(temp['result']['ipv6_cidrs'])
-        print(temp['result']['ipv6_cidrs_workaround'])
-        print(temp['result'])
-        print("")
+
         return temp['result']
     raise Exception("Cloudflare response error")
 
@@ -86,7 +75,6 @@ def add_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, ip_type):
     change_token_response = waf.get_change_token()
     change_token = change_token_response['ChangeToken']
 
-    print("A Change token ==> '%s'" % change_token)
     updates = [{
             'Action': 'INSERT',
             'IPSetDescriptor': {
@@ -110,8 +98,6 @@ def delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, ip_type):
     waf = boto3.client('waf')
     change_token_response = waf.get_change_token()
     change_token = change_token_response['ChangeToken']
-
-    print("B Change token ==> '%s'" % change_token)
 
     updates = [{
             'Action': 'DELETE',
