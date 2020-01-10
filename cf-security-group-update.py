@@ -21,10 +21,34 @@ def get_cloudflare_ip_list():
                 new_ipv4s.append(str(new_ip))
         temp['result']['ipv4_cidrs_workaround'] = new_ipv4s
         print("")
+        print("IPV4")
         print(temp['result']['ipv4_cidrs'])
         print(temp['result']['ipv4_cidrs_workaround'])
         print(temp['result'])
         print("")
+
+        ipv6_list = temp['result']['ipv6_cidrs']
+        new_ipv6s = []
+        for ip in ipv6_list:
+            mask = int(ip.split(u'/')[1])
+            if (mask in [24, 32, 48, 56, 64, 128])
+                new_ipv6s.append(ip)
+                continue
+            new_prefix = 32
+            for supported_mask in [24, 32, 48, 56, 64, 128]:
+                if mask <= supported_mask:
+                    new_prefix = supported_mask
+                    break
+            for new_ip in ip_network(ip).subnets( new_prefix = new_prefix ):
+                new_ipv6s.append(str(new_ip))
+        temp['result']['ipv6_cidrs_workaround'] = new_ipv6s
+        print("")
+        print("IPV6")
+        print(temp['result']['ipv6_cidrs'])
+        print(temp['result']['ipv6_cidrs_workaround'])
+        print(temp['result'])
+        print("")
+
         return temp['result']
     raise Exception("Cloudflare response error")
 
