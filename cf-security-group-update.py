@@ -2,7 +2,7 @@ import os
 import boto3
 import json
 from botocore.vendored import requests
-from aws_workaround import convert_to_smaller_cidr
+from ipaddress import ip_network
 
 
 def get_cloudflare_ip_list():
@@ -17,8 +17,8 @@ def get_cloudflare_ip_list():
             if (mask == 8 or (mask >= 16 and mask <= 32)):
                 new_ipv4s.append(ip)
                 continue
-            for new_ip in convert_to_smaller_cidr(ip, 16):
-                new_ipv4s.append(new_ip)
+            for new_ip in ip_network(ip).subnets(new_prefix=16):
+                new_ipv4s.append(str(new_ip))
         temp['result']['ipv4_cidrs_workaround'] = new_ipv4s
         print("")
         print(temp['result']['ipv4_cidrs'])
