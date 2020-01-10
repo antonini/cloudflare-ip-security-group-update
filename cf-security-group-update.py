@@ -48,7 +48,6 @@ def get_cloudflare_ip_list():
         print(temp['result']['ipv6_cidrs_workaround'])
         print(temp['result'])
         print("")
-
         return temp['result']
     raise Exception("Cloudflare response error")
 
@@ -61,6 +60,112 @@ def get_aws_s3_bucket_policy(s3_id):
         raise Exception("Failed to retrieve Policy from S3 %s" % (s3_id))
     policy = json.loads(result['Policy'])
     return { 'id' : s3_id, s3_id : policy }
+
+
+def check_waf_v1_ipset_ipvx_rule_exists(ipset_content, address, ip_type):
+    """ Check if the rule currently exists """
+    if not "IPSet" in ipset_content:
+        raise Exception("Structure of IP SET v1 is not well formated. Missing 'IPSet' tag.")
+
+    ipset = ipset_content['IPSet']
+
+    if not "IPSetDescriptors" in ipset:
+        raise Exception("Structure of IP SET v1 is not well formated. Missing 'IPSetDescriptors' tag inside 'IPSet'.")
+    ipset_descriptors = ipset['IPSetDescriptors']
+
+    for ipset_descriptor in ipset_descriptors:
+        if not ip_type == ipset_descriptor['Type']:
+            continue
+        if address == ipset_descriptor['Value']:
+            return True
+    return False
+
+def add_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, ip_type):
+    """ Add the IP address to an IP Set from AWS WAF v1 """
+    waf = boto3.client('waf')
+    change_token_response = waf.get_change_token()
+    change_token = change_token_response['ChangeToken']
+
+    print("A Change token ==> '%s'" % change_token)
+    updates = [{
+            'Action': 'INSERT',
+            'IPSetDescriptor': {
+                'Type': ip_type,
+                'Value': ip_address
+            }
+        }]
+
+    waf.update_ip_set(
+        IPSetId = ipset_id,
+        ChangeToken = change_token,
+        Updates = updates
+    )
+
+    print("Added %s (%s) to %s  " % (ip_address, ip_type, ipset_id))
+    return
+
+
+def delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, ip_type):
+    """ Delete the IP address of an IP Set from AWS WAF v1 """
+    waf = boto3.client('waf')
+    change_token_response = waf.get_change_token()
+    change_token = change_token_response['ChangeToken']
+
+    print("B Change token ==> '%s'" % change_token)
+
+    updates = [{
+            'Action': 'DELETE',
+            'IPSetDescriptor': {
+                'Type': ip_type,
+                'Value': ip_address
+            }
+        }]
+    waf.update_ip_set(
+        IPSetId = ipset_id,
+        ChangeToken = change_token,
+        Updates = updates
+    )
+
+    print("Deleted %s (%s) to %s  " % (ip_address, ip_type, ipset_id))
+    return
+
+
+def get_waf_v1_ipset(ipset_id):
+    """ Return the defined IP Set from AWS WAF v1 """
+    waf = boto3.client('waf')
+    policy =  waf.get_ip_set( IPSetId = ipset_id )
+    #policy =  json.loads(waf.get_ip_set( IPSetId = ipset_id ))
+    return { 'id' : ipset_id, 'content' : policy }
+
+
+def check_waf_v1_ipset_ipv4_rule_exists(ipset_content, address):
+    """ Check if the rule currently exists """
+    return check_waf_v1_ipset_ipvx_rule_exists(ipset_content, address, 'IPV4')
+
+
+def add_waf_v1_ipset_ipv4_rule(ipset_id, ip_address):
+    """ Add the IPv4 address to the IP Set from AWS WAF v1 """
+    add_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, 'IPV4')
+
+
+def delete_waf_v1_ipset_ipv4_rule(ipset_id, ip_address):
+    """ Delete the IP address of an IP Set from AWS WAF v1 """
+    delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, 'IPV4')
+
+
+def check_waf_v1_ipset_ipv6_rule_exists(ipset_content, address):
+    """ Check if the rule currently exists """
+    return check_waf_v1_ipset_ipvx_rule_exists(ipset_content, address, 'IPV6')
+
+
+def add_waf_v1_ipset_ipv6_rule(ipset_id, ip_address):
+    """ Add the IPv6 address to the IP Set from AWS WAF v1 """
+    add_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, 'IPV6')
+
+
+def delete_waf_v1_ipset_ipv6_rule(ipset_id, ip_address):
+    """ Delete the IP address of an IP Set from AWS WAF v1 """
+    delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, 'IPV6')
 
 
 def get_aws_security_group(group_id):
@@ -137,7 +242,48 @@ def delete_ipv6_rule(group, address, port):
     }])
     print("Removed %s : %i from %s  " % (address, port, group.group_id))
 
-def update_s3_policies_policies(ip_addresses):
+
+def update_ip_set_v1_policies(ip_addresses):
+    """ Updates IP set from AWS WAF Classic """
+    if not "IPSET_V1_IDS_LIST" in os.environ and not "IPSET_V1_ID" in os.environ:
+        print("Missing Web ACL Classic configuration 'IPSET_V1_IDS_LIST' or 'IPSET_V1_ID'. Will not check Security Policy.") 
+        return
+   
+    ip_sets = map(get_waf_v1_ipset, os.environ['IPSET_V1_IDS_LIST'].split(","))
+    if not ip_sets:
+        ip_sets = [get_waf_v1_ipset(os.environ['IPSET_V1_ID'])]
+    
+    ## Security Groups
+    for ipset in ip_sets: 
+        ipset_id = ipset['id']
+        current_rules = ipset['content']
+        ## IPv4
+        # add new addresses
+        for ipv4_cidr in ip_addresses['ipv4_cidrs_workaround']:
+            if not check_waf_v1_ipset_ipv4_rule_exists(current_rules, ipv4_cidr):
+                add_waf_v1_ipset_ipv4_rule(ipset_id, ipv4_cidr)
+
+        ## IPv6 -- because of boto3 syntax, this has to be separate
+        # add new addresses
+        for ipv6_cidr in ip_addresses['ipv6_cidrs_workaround']:
+            if not check_waf_v1_ipset_ipv6_rule_exists(current_rules, ipv6_cidr):
+                add_waf_v1_ipset_ipv6_rule(ipset_id, ipv6_cidr)
+
+        # remove old addresses
+        for rule in current_rules['IPSet']['IPSetDescriptors']:
+            ip_type = rule['Type']
+            ip_addr = rule['Value']
+
+            in_ipv4 = ip_addr in ip_addresses['ipv4_cidrs_workaround']
+            in_ipv6 = ip_addr in ip_addresses['ipv6_cidrs_workaround']
+
+            if not in_ipv6 and not in_ipv4:
+                delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_addr, ip_type)
+
+    return
+
+
+def update_s3_policies(ip_addresses):
     """ Update S3 policies """
     print("Checking policies of S3")
 
@@ -183,6 +329,7 @@ def update_s3_policies_policies(ip_addresses):
             policy = json.dumps(policy)
             print("Going to update policy %s " % (s3_id) )
             s3.put_bucket_policy(Bucket=s3_id, Policy=policy)
+
 
 def update_security_group_policies(ip_addresses):
     """ Update Information of Security Groups """
@@ -239,6 +386,8 @@ def lambda_handler(event, context):
     
     ip_addresses = get_cloudflare_ip_list()
 
+    update_ip_set_v1_policies(ip_addresses)
+
     update_security_group_policies(ip_addresses)
 
-    update_s3_policies_policies(ip_addresses)
+    update_s3_policies(ip_addresses)
