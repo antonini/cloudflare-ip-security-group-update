@@ -427,5 +427,6 @@ def lambda_handler(event, context):
 
     return {
         'statusCode': 200,
-        'messages': json.dumps(messages)
+        'messages': json.dumps(messages),
+        'cloudflare_data': ip_addresses
     }
