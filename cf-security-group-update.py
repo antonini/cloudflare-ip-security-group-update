@@ -65,7 +65,13 @@ def check_waf_v1_ipset_ipvx_rule_exists(ipset_content, address, ip_type):
     for ipset_descriptor in ipset_descriptors:
         if not ip_type == ipset_descriptor['Type']:
             continue
-        if ip_network(address) == ip_network(ipset_descriptor['Value']) or ip_network(address).overlaps(ip_network(ipset_descriptor['Value'])):
+        print("Address '%s'" % (address))
+        print("Value '%s'" % (ipset_descriptor['Value']))
+        print("Type '%s'" % (ipset_descriptor['Type']))
+
+        net_ipaddr = ip_network(address)
+        net_value = ip_network(ipset_descriptor['Value'])
+        if net_ipaddr == net_value or net_ipaddr.overlaps(net_value):
             return True
     return False
 
