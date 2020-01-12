@@ -60,6 +60,8 @@ def check_waf_v1_ipset_ipvx_rule_exists(ipset_content, address, ip_type):
 
     if not "IPSetDescriptors" in ipset:
         raise Exception("Structure of IP SET v1 is not well formated. Missing 'IPSetDescriptors' tag inside 'IPSet'.")
+    
+    address = unicode(address, 'utf-8')
     ipset_descriptors = ipset['IPSetDescriptors']
 
     for ipset_descriptor in ipset_descriptors:
