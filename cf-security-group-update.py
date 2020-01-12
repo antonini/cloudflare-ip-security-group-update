@@ -69,9 +69,6 @@ def check_waf_v1_ipset_ipvx_rule_exists(ipset_content, address, ip_type):
     for ipset_descriptor in ipset_descriptors:
         if not ip_type == ipset_descriptor['Type']:
             continue
-        print("Address '%s'" % (address))
-        print("Value '%s'" % (ipset_descriptor['Value']))
-        print("Type '%s'" % (ipset_descriptor['Type']))
 
         net_ipaddr = ip_network(address)
         net_value = ip_network(ipset_descriptor['Value'])
@@ -239,7 +236,7 @@ def delete_ipv6_rule(group, address, port):
     print("Removed %s : %i from %s  " % (address, port, group.group_id))
 
 
-def update_ip_set_v1_policies(ip_addresses):
+def update_ip_set_v1_policies(ip_addresses, messages):
     """ Updates IP set from AWS WAF Classic """
     if not "IPSET_V1_IDS_LIST" in os.environ and not "IPSET_V1_ID" in os.environ:
         print("Missing Web ACL Classic configuration 'IPSET_V1_IDS_LIST' or 'IPSET_V1_ID'. Will not check Security Policy.") 
@@ -276,8 +273,6 @@ def update_ip_set_v1_policies(ip_addresses):
             in_ipv6 = False
             if 'IPV4' == ip_type:
                 for addr in ip_addresses['ipv4_cidrs_workaround']:
-                    print("A Addr '%s'" % addr)
-                    print("A Netw '%s'" % ip_addr)
                     if not isinstance(addr, unicode):
                         addr = unicode(addr, 'utf-8')
                     if not isinstance(ip_addr, unicode):
@@ -289,8 +284,6 @@ def update_ip_set_v1_policies(ip_addresses):
                         break
             if 'IPV6' == ip_type:
                 for addr in ip_addresses['ipv6_cidrs_workaround']:
-                    print("B Addr '%s'" % addr)
-                    print("B Netw '%s'" % ip_addr)
                     if not isinstance(addr, unicode):
                         addr = unicode(addr, 'utf-8')
                     if not isinstance(ip_addr, unicode):
@@ -310,9 +303,10 @@ def update_ip_set_v1_policies(ip_addresses):
     return
 
 
-def update_s3_policies(ip_addresses):
+def update_s3_policies(ip_addresses, messages):
     """ Update S3 policies """
     print("Checking policies of S3")
+    messages.append("Checking policies of S3")
 
     s3 = boto3.client('s3')
 
@@ -323,6 +317,7 @@ def update_s3_policies(ip_addresses):
 
     if not "S3_CLOUDFLARE_SID" in os.environ:
         print("Not configured 'S3_CLOUDFLARE_SID' variable, so will not check S3")
+        messages.append("Not configured 'S3_CLOUDFLARE_SID' variable, so will not check S3")
         return
 
     if not "S3_BUCKET_IDS_LIST" in os.environ and not "S3_BUCKET_ID" in os.environ:
@@ -337,6 +332,7 @@ def update_s3_policies(ip_addresses):
         updated = False
         s3_id = s3_tuple['id']
         print("Checking Policy of S3 Bucket '%s'" % (s3_id) )
+        messages.append("Checking Policy of S3 Bucket '%s'" % (s3_id) )
         policy = s3_tuple[s3_id]
         if not 'Statement' in policy:
             raise Exception("Problem reading policy of S3 Bucket '%s'" % (s3_id) )
@@ -355,12 +351,14 @@ def update_s3_policies(ip_addresses):
         if updated:
             policy = json.dumps(policy)
             print("Going to update policy %s " % (s3_id) )
+            messages.append("Going to update policy %s " % (s3_id) )
             s3.put_bucket_policy(Bucket=s3_id, Policy=policy)
 
 
-def update_security_group_policies(ip_addresses):
+def update_security_group_policies(ip_addresses, messages):
     """ Update Information of Security Groups """
     print("Checking policies of Security Groups")
+    messages.append("Checking policies of Security Groups")
 
     if not "SECURITY_GROUP_IDS_LIST" in os.environ and not "SECURITY_GROUP_ID" in os.environ:
         print("Missing S3 basic configuration 'SECURITY_GROUP_IDS_LIST' or 'SECURITY_GROUP_ID'. Will not check Security Policy.") 
@@ -411,10 +409,16 @@ def update_security_group_policies(ip_addresses):
 def lambda_handler(event, context):
     """ AWS Lambda main function """
     
+    messages = []
     ip_addresses = get_cloudflare_ip_list()
 
-    update_ip_set_v1_policies(ip_addresses)
+    update_ip_set_v1_policies(ip_addresses, messages)
 
-    update_security_group_policies(ip_addresses)
+    update_security_group_policies(ip_addresses, messages)
 
-    update_s3_policies(ip_addresses)
+    update_s3_policies(ip_addresses, messages)
+
+    return {
+        'statusCode': 200,
+        'messages': json.dumps(messages)
+    }
