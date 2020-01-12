@@ -76,7 +76,7 @@ def check_waf_v1_ipset_ipvx_rule_exists(ipset_content, address, ip_type):
             return True
     return False
 
-def add_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, ip_type):
+def add_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, ip_type, messages):
     """ Add the IP address to an IP Set from AWS WAF v1 """
     waf = boto3.client('waf')
     change_token_response = waf.get_change_token()
@@ -97,10 +97,11 @@ def add_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, ip_type):
     )
 
     print("Added %s (%s) to %s  " % (ip_address, ip_type, ipset_id))
+    messages.append("Added %s (%s) to %s  " % (ip_address, ip_type, ipset_id))
     return
 
 
-def delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, ip_type):
+def delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, ip_type, messages):
     """ Delete the IP address of an IP Set from AWS WAF v1 """
     waf = boto3.client('waf')
     change_token_response = waf.get_change_token()
@@ -120,6 +121,7 @@ def delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, ip_type):
     )
 
     print("Deleted %s (%s) to %s  " % (ip_address, ip_type, ipset_id))
+    messages.append("Deleted %s (%s) to %s  " % (ip_address, ip_type, ipset_id))
     return
 
 
@@ -136,14 +138,14 @@ def check_waf_v1_ipset_ipv4_rule_exists(ipset_content, address):
     return check_waf_v1_ipset_ipvx_rule_exists(ipset_content, address, 'IPV4')
 
 
-def add_waf_v1_ipset_ipv4_rule(ipset_id, ip_address):
+def add_waf_v1_ipset_ipv4_rule(ipset_id, ip_address, messages):
     """ Add the IPv4 address to the IP Set from AWS WAF v1 """
-    add_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, 'IPV4')
+    add_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, 'IPV4', messages)
 
 
-def delete_waf_v1_ipset_ipv4_rule(ipset_id, ip_address):
+def delete_waf_v1_ipset_ipv4_rule(ipset_id, ip_address, messages):
     """ Delete the IP address of an IP Set from AWS WAF v1 """
-    delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, 'IPV4')
+    delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, 'IPV4', messages)
 
 
 def check_waf_v1_ipset_ipv6_rule_exists(ipset_content, address):
@@ -151,14 +153,14 @@ def check_waf_v1_ipset_ipv6_rule_exists(ipset_content, address):
     return check_waf_v1_ipset_ipvx_rule_exists(ipset_content, address, 'IPV6')
 
 
-def add_waf_v1_ipset_ipv6_rule(ipset_id, ip_address):
+def add_waf_v1_ipset_ipv6_rule(ipset_id, ip_address, messages):
     """ Add the IPv6 address to the IP Set from AWS WAF v1 """
-    add_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, 'IPV6')
+    add_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, 'IPV6', messages)
 
 
-def delete_waf_v1_ipset_ipv6_rule(ipset_id, ip_address):
+def delete_waf_v1_ipset_ipv6_rule(ipset_id, ip_address, messages):
     """ Delete the IP address of an IP Set from AWS WAF v1 """
-    delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, 'IPV6')
+    delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_address, 'IPV6', messages)
 
 
 def get_aws_security_group(group_id):
@@ -179,23 +181,24 @@ def check_ipv4_rule_exists(rules, address, port):
     return False
 
 
-def add_ipv4_rule(group, address, port):
+def add_ipv4_rule(group, address, port, messages):
     """ Add the IP address/port to the security group """
     group.authorize_ingress(IpProtocol="tcp",
                             CidrIp=address,
                             FromPort=port,
                             ToPort=port)
     print("Added %s : %i to %s  " % (address, port, group.group_id))
+    messages.append("Added %s : %i to %s  " % (address, port, group.group_id))
 
 
-def delete_ipv4_rule(group, address, port):
+def delete_ipv4_rule(group, address, port, messages):
     """ Remove the IP address/port from the security group """
     group.revoke_ingress(IpProtocol="tcp",
                          CidrIp=address,
                          FromPort=port,
                          ToPort=port)
     print("Removed %s : %i from %s  " % (address, port, group.group_id))
-
+    messages.append("Removed %s : %i from %s  " % (address, port, group.group_id))
 
 def check_ipv6_rule_exists(rules, address, port):
     """ Check if the rule currently exists """
@@ -206,7 +209,7 @@ def check_ipv6_rule_exists(rules, address, port):
     return False
 
 
-def add_ipv6_rule(group, address, port):
+def add_ipv6_rule(group, address, port, messages):
     """ Add the IP address/port to the security group """
     group.authorize_ingress(IpPermissions=[{
         'IpProtocol': "tcp",
@@ -219,6 +222,7 @@ def add_ipv6_rule(group, address, port):
         ]
     }])
     print("Added %s : %i to %s  " % (address, port, group.group_id))
+    messages.append("Added %s : %i to %s  " % (address, port, group.group_id))
 
 
 def delete_ipv6_rule(group, address, port):
@@ -234,12 +238,14 @@ def delete_ipv6_rule(group, address, port):
         ]
     }])
     print("Removed %s : %i from %s  " % (address, port, group.group_id))
+    messages.append("Removed %s : %i from %s  " % (address, port, group.group_id))
 
 
 def update_ip_set_v1_policies(ip_addresses, messages):
     """ Updates IP set from AWS WAF Classic """
     if not "IPSET_V1_IDS_LIST" in os.environ and not "IPSET_V1_ID" in os.environ:
         print("Missing Web ACL Classic configuration 'IPSET_V1_IDS_LIST' or 'IPSET_V1_ID'. Will not check Security Policy.") 
+        messages.append("Missing Web ACL Classic configuration 'IPSET_V1_IDS_LIST' or 'IPSET_V1_ID'. Will not check Security Policy.") 
         return
    
     ip_sets = map(get_waf_v1_ipset, os.environ['IPSET_V1_IDS_LIST'].split(","))
@@ -254,13 +260,13 @@ def update_ip_set_v1_policies(ip_addresses, messages):
         # add new addresses
         for ipv4_cidr in ip_addresses['ipv4_cidrs_workaround']:
             if not check_waf_v1_ipset_ipv4_rule_exists(current_rules, ipv4_cidr):
-                add_waf_v1_ipset_ipv4_rule(ipset_id, ipv4_cidr)
+                add_waf_v1_ipset_ipv4_rule(ipset_id, ipv4_cidr, messages)
 
         ## IPv6 -- because of boto3 syntax, this has to be separate
         # add new addresses
         for ipv6_cidr in ip_addresses['ipv6_cidrs_workaround']:
             if not check_waf_v1_ipset_ipv6_rule_exists(current_rules, ipv6_cidr):
-                add_waf_v1_ipset_ipv6_rule(ipset_id, ipv6_cidr)
+                add_waf_v1_ipset_ipv6_rule(ipset_id, ipv6_cidr, messages)
 
         # remove old addresses
         for rule in current_rules['IPSet']['IPSetDescriptors']:
@@ -298,7 +304,7 @@ def update_ip_set_v1_policies(ip_addresses, messages):
             in_ipv6 = ip_addr in ip_addresses['ipv6_cidrs_workaround']
 
             if not in_ipv6 and not in_ipv4:
-                delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_addr, ip_type)
+                delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_addr, ip_type, messages)
 
     return
 
@@ -361,7 +367,8 @@ def update_security_group_policies(ip_addresses, messages):
     messages.append("Checking policies of Security Groups")
 
     if not "SECURITY_GROUP_IDS_LIST" in os.environ and not "SECURITY_GROUP_ID" in os.environ:
-        print("Missing S3 basic configuration 'SECURITY_GROUP_IDS_LIST' or 'SECURITY_GROUP_ID'. Will not check Security Policy.") 
+        print("Missing S3 basic configuration 'SECURITY_GROUP_IDS_LIST' or 'SECURITY_GROUP_ID'. Will not check Security Policy.")
+        messages.append("Missing S3 basic configuration 'SECURITY_GROUP_IDS_LIST' or 'SECURITY_GROUP_ID'. Will not check Security Policy.")
         return
    
     ports = map(int, os.environ['PORTS_LIST'].split(","))
@@ -380,7 +387,7 @@ def update_security_group_policies(ip_addresses, messages):
         for ipv4_cidr in ip_addresses['ipv4_cidrs']:
             for port in ports:
                 if not check_ipv4_rule_exists(current_rules, ipv4_cidr, port):
-                    add_ipv4_rule(security_group, ipv4_cidr, port)
+                    add_ipv4_rule(security_group, ipv4_cidr, port, messages)
     
         # remove old addresses
         for port in ports:
@@ -389,21 +396,21 @@ def update_security_group_policies(ip_addresses, messages):
                 if rule['FromPort'] == port and rule['ToPort'] == port:
                     for ip_range in rule['IpRanges']:
                         if ip_range['CidrIp'] not in ip_addresses['ipv4_cidrs']:
-                            delete_ipv4_rule(security_group, ip_range['CidrIp'], port)
+                            delete_ipv4_rule(security_group, ip_range['CidrIp'], port, messages)
     
         ## IPv6 -- because of boto3 syntax, this has to be separate
         # add new addresses
         for ipv6_cidr in ip_addresses['ipv6_cidrs']:
             for port in ports:
                 if not check_ipv6_rule_exists(current_rules, ipv6_cidr, port):
-                    add_ipv6_rule(security_group, ipv6_cidr, port)
+                    add_ipv6_rule(security_group, ipv6_cidr, port, messages)
     
         # remove old addresses
         for port in ports:
             for rule in current_rules:
                 for ip_range in rule['Ipv6Ranges']:
                     if ip_range['CidrIpv6'] not in ip_addresses['ipv6_cidrs']: 
-                        delete_ipv6_rule(security_group, ip_range['CidrIpv6'], port)
+                        delete_ipv6_rule(security_group, ip_range['CidrIpv6'], port, messages)
 
 
 def lambda_handler(event, context):
