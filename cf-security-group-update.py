@@ -278,14 +278,19 @@ def update_ip_set_v1_policies(ip_addresses):
                 for addr in ip_addresses['ipv4_cidrs_workaround']:
                     print("A Addr '%s'" % addr)
                     print("A Netw '%s'" % ip_addr)
-                    if ip_address(addr) in ip_network(ip_addr):
+
+                    net_ipaddr = ip_network(addr)
+                    net_value = ip_network(ip_addr)
+                    if net_ipaddr == net_value or net_ipaddr.overlaps(net_value):
                         in_ipv4 = True
                         break
             if 'IPV6' == ip_type:
                 for addr in ip_addresses['ipv6_cidrs_workaround']:
                     print("B Addr '%s'" % addr)
                     print("B Netw '%s'" % ip_addr)
-                    if ip_address(addr) in ip_network(ip_addr):
+                    net_ipaddr = ip_network(addr)
+                    net_value = ip_network(ip_addr)
+                    if net_ipaddr == net_value or net_ipaddr.overlaps(net_value):
                         in_ipv4 = True
                         break
 
