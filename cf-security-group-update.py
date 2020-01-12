@@ -1,7 +1,8 @@
 import os
 import boto3
 import json
-from botocore.vendored import requests
+import requests
+#from botocore.vendored import requests
 from ipaddress import ip_network, ip_address
 
 
@@ -299,11 +300,6 @@ def update_ip_set_v1_policies(ip_addresses, messages):
                     if net_ipaddr == net_value or net_ipaddr.overlaps(net_value):
                         in_ipv4 = True
                         break
-
-            #in_ipv4 = ip_addr in ip_addresses['ipv4_cidrs_workaround']
-            #in_ipv6 = ip_addr in ip_addresses['ipv6_cidrs_workaround']
-
-            print("IP %s (%s) ==> %s, %s" % (ip_addr, ip_type, in_ipv4, in_ipv6))
             if not in_ipv6 and not in_ipv4:
                 delete_waf_v1_ipset_ipvx_rule(ipset_id, ip_addr, ip_type, messages)
 
