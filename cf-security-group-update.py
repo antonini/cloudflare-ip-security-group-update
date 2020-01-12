@@ -278,7 +278,10 @@ def update_ip_set_v1_policies(ip_addresses):
                 for addr in ip_addresses['ipv4_cidrs_workaround']:
                     print("A Addr '%s'" % addr)
                     print("A Netw '%s'" % ip_addr)
-
+                    if not isinstance(addr, unicode):
+                        addr = unicode(addr, 'utf-8')
+                    if not isinstance(ip_addr, unicode):
+                        ip_addr = unicode(ip_addr, 'utf-8')
                     net_ipaddr = ip_network(addr)
                     net_value = ip_network(ip_addr)
                     if net_ipaddr == net_value or net_ipaddr.overlaps(net_value):
@@ -288,6 +291,10 @@ def update_ip_set_v1_policies(ip_addresses):
                 for addr in ip_addresses['ipv6_cidrs_workaround']:
                     print("B Addr '%s'" % addr)
                     print("B Netw '%s'" % ip_addr)
+                    if not isinstance(addr, unicode):
+                        addr = unicode(addr, 'utf-8')
+                    if not isinstance(ip_addr, unicode):
+                        ip_addr = unicode(ip_addr, 'utf-8')
                     net_ipaddr = ip_network(addr)
                     net_value = ip_network(ip_addr)
                     if net_ipaddr == net_value or net_ipaddr.overlaps(net_value):
