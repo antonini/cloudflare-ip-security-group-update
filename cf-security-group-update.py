@@ -269,6 +269,8 @@ def update_ip_set_v1_policies(ip_addresses):
         for rule in current_rules['IPSet']['IPSetDescriptors']:
             ip_type = rule['Type']
             ip_addr = rule['Value']
+            if not isinstance(ip_addr, unicode):
+                ip_addr = unicode(ip_addr, 'utf-8')
 
             in_ipv4 = False
             in_ipv6 = False
