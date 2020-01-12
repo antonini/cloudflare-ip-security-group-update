@@ -276,12 +276,16 @@ def update_ip_set_v1_policies(ip_addresses):
             in_ipv6 = False
             if 'IPV4' == ip_type:
                 for addr in ip_addresses['ipv4_cidrs_workaround']:
-                    if ip_address(ip_addr) in ip_network(ip_addr):
+                    print("A Addr '%s'" % addr)
+                    print("A Netw '%s'" % ip_addr)
+                    if ip_address(addr) in ip_network(ip_addr):
                         in_ipv4 = True
                         break
             if 'IPV6' == ip_type:
                 for addr in ip_addresses['ipv6_cidrs_workaround']:
-                    if ip_address(ip_addr) in ip_network(ip_addr):
+                    print("B Addr '%s'" % addr)
+                    print("B Netw '%s'" % ip_addr)
+                    if ip_address(addr) in ip_network(ip_addr):
                         in_ipv4 = True
                         break
 
