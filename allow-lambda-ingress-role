@@ -3,11 +3,17 @@
             "Effect": "Allow",
             "Action": [
                 "ec2:AuthorizeSecurityGroupIngress",
-                "ec2:RevokeSecurityGroupIngress",
                 "ec2:DescribeSecurityGroups",
+                "ec2:RevokeSecurityGroupIngress",
+                "s3:GetBucketPolicy",
                 "s3:GetBucketPolicyStatus",
                 "s3:PutBucketPolicy",
-                "s3:GetBucketPolicy"
+                "waf:CreateIPSet",
+                "waf:DeleteIPSet",
+                "waf:GetChangeToken"
+                "waf:GetIPSet",
+                "waf:ListIPSets",
+                "waf:UpdateIPSet"
             ],
             "Resource": [
                 "*"
